@@ -44,9 +44,23 @@
     font-size: 12px; font-weight: 600; cursor: pointer;
     box-shadow: 0 1px 2px rgba(0,0,0,.05);
     transition: all .2s;
+    white-space: nowrap;
   }
   .install-btn:hover { background: #A89AD8; }
-  .install-btn:disabled { display: none; }
+  .install-btn.guide {
+    background: #1A1A1A; color: #fff;
+    font-size: 11px; padding: 8px 12px;
+  }
+  .install-toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: #1A1A1A; color: #fff;
+    padding: 12px 24px; border-radius: 999px;
+    font-size: 13px; font-weight: 500;
+    box-shadow: 0 4px 16px rgba(0,0,0,.15);
+    z-index: 999; animation: toastIn .3s ease-out;
+    max-width: 90vw; text-align: center;
+  }
+  @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(12px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
   .display {
     background: #fff; border: 1px solid #F0F0F0; border-radius: 20px;
     padding: 22px 20px; margin-bottom: 16px;
@@ -217,24 +231,55 @@
     else if (e.key === '%') percent();
   });
 
-  // ---- PWA install prompt ----
-  let deferredPrompt = null;
+  // ---- PWA install (always visible button) ----
+  const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
   const installBtn = document.getElementById('installBtn');
+  let deferredPrompt = null;
+
+  // Already installed → hide button
+  if (isStandalone) {
+    installBtn.style.display = 'none';
+  } else {
+    // Always show button, but update label based on platform
+    if (isIOS) {
+      installBtn.textContent = '➕ Ajouter';
+      installBtn.classList.add('guide');
+    }
+    // On Android, the button is ready — we'll show instructions if needed
+  }
+
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
-    installBtn.disabled = false;
+    installBtn.textContent = '📲 Installer';
+    installBtn.classList.remove('guide');
   });
+
+  function showToast(msg) {
+    const t = document.createElement('div');
+    t.className = 'install-toast'; t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3500);
+  }
+
   installBtn.addEventListener('click', async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') installBtn.style.display = 'none';
-    deferredPrompt = null;
+    if (deferredPrompt) {
+      // Native prompt available → trigger it
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') { installBtn.style.display = 'none'; }
+      deferredPrompt = null;
+    } else if (isIOS) {
+      // iOS Safari → explain manual steps
+      showToast('📱 Appuyez sur le bouton Partager ⬆️ puis « Sur l\'écran d\'accueil »');
+    } else {
+      // Android but prompt not available → explain manual steps
+      showToast('📱 Ouvrez le menu Chrome ⋮ → « Installer l\'application »');
+    }
   });
-  window.addEventListener('appinstalled', () => {
-    installBtn.style.display = 'none';
-  });
+
+  window.addEventListener('appinstalled', () => { installBtn.style.display = 'none'; });
 
   // ---- Service Worker registration (offline) ----
   if ('serviceWorker' in navigator) {
