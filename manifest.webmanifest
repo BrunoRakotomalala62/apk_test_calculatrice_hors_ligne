@@ -1,9 +1,9 @@
 {
-  "name": "Calculatrice Simple",
+  "name": "Calculatrice Hors Ligne",
   "short_name": "Calculatrice",
-  "description": "Une calculatrice simple, rapide et utilisable hors ligne.",
-  "start_url": "./",
-  "scope": "./",
+  "description": "Calculatrice simple, rapide et 100% hors ligne.",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#FAFAF8",
@@ -11,16 +11,9 @@
   "lang": "fr",
   "icons": [
     {
-      "src": "icon.svg",
-      "type": "image/svg+xml",
-      "sizes": "any",
-      "purpose": "any maskable"
-    },
-    {
       "src": "icon-192.png",
       "type": "image/png",
-      "sizes": "192x192",
-      "purpose": "any"
+      "sizes": "192x192"
     },
     {
       "src": "icon-512.png",
