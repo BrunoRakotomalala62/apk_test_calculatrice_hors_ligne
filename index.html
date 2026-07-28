@@ -236,20 +236,22 @@
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
   const installBtn = document.getElementById('installBtn');
   let deferredPrompt = null;
+  let swReady = false;
 
   // Already installed → hide button
   if (isStandalone) {
     installBtn.style.display = 'none';
   } else {
-    // Always show button, but update label based on platform
     if (isIOS) {
       installBtn.textContent = '➕ Ajouter';
       installBtn.classList.add('guide');
+    } else {
+      installBtn.textContent = '⏳ Patientez…';
     }
-    // On Android, the button is ready — we'll show instructions if needed
   }
 
   window.addEventListener('beforeinstallprompt', (e) => {
+    console.log('✅ beforeinstallprompt FIRE !');
     e.preventDefault();
     deferredPrompt = e;
     installBtn.textContent = '📲 Installer';
@@ -260,21 +262,21 @@
     const t = document.createElement('div');
     t.className = 'install-toast'; t.textContent = msg;
     document.body.appendChild(t);
-    setTimeout(() => t.remove(), 3500);
+    setTimeout(() => t.remove(), 4000);
   }
 
   installBtn.addEventListener('click', async () => {
     if (deferredPrompt) {
-      // Native prompt available → trigger it
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
+      console.log('Install outcome:', outcome);
       if (outcome === 'accepted') { installBtn.style.display = 'none'; }
       deferredPrompt = null;
     } else if (isIOS) {
-      // iOS Safari → explain manual steps
-      showToast('📱 Appuyez sur le bouton Partager ⬆️ puis « Sur l\'écran d\'accueil »');
+      showToast('📱 Appuyez sur Partager ⬆️ puis « Sur l\'écran d\'accueil »');
+    } else if (!swReady) {
+      showToast('⏳ Le Service Worker est en cours d\'activation… Réessayez dans 2 secondes');
     } else {
-      // Android but prompt not available → explain manual steps
       showToast('📱 Ouvrez le menu Chrome ⋮ → « Installer l\'application »');
     }
   });
@@ -284,8 +286,41 @@
   // ---- Service Worker registration (offline) ----
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW failed', err));
+      navigator.serviceWorker.register('sw.js')
+        .then((reg) => {
+          console.log('SW registered:', reg.scope);
+          // Écouter quand le SW est prêt
+          if (reg.installing) {
+            console.log('SW installing…');
+            reg.installing.addEventListener('statechange', (e) => {
+              console.log('SW state:', e.target.state);
+              if (e.target.state === 'activated') {
+                swReady = true;
+                if (!deferredPrompt && !isIOS) installBtn.textContent = '📲 Installer';
+              }
+            });
+          } else if (reg.active) {
+            console.log('SW already active');
+            swReady = true;
+            if (!deferredPrompt && !isIOS) installBtn.textContent = '📲 Installer';
+          } else if (reg.waiting) {
+            console.log('SW waiting');
+            reg.waiting.addEventListener('statechange', (e) => {
+              if (e.target.state === 'activated') {
+                swReady = true;
+                if (!deferredPrompt && !isIOS) installBtn.textContent = '📲 Installer';
+              }
+            });
+          }
+        })
+        .catch(err => {
+          console.warn('SW registration failed:', err);
+          if (!isIOS) installBtn.textContent = '📲 Installer';
+        });
     });
+  } else {
+    console.warn('No serviceWorker support');
+    if (!isIOS) installBtn.textContent = '📲 Installer';
   }
 </script>
 </body>
