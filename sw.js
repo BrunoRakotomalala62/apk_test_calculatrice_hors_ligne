@@ -1,25 +1,14 @@
 // Service Worker — Calculatrice PWA
-// Met en cache tous les fichiers de l'application pour un fonctionnement hors ligne.
+// Stratégie : network-first avec cache runtime (installation garantie sans échec)
 
-const CACHE_NAME = 'calculatrice-v1';
-const ASSETS = [
-  './',
-  './index.html',
-  './manifest.webmanifest',
-  './icon.svg',
-  './icon-192.png',
-  './icon-512.png'
-];
+const CACHE_NAME = 'calculatrice-v2';
 
-// Installation : pré-charge tous les fichiers dans le cache
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
-      .then(() => self.skipWaiting())
-  );
+// Installation immédiate — ne pré-cache rien pour éviter tout échec
+self.addEventListener('install', () => {
+  self.skipWaiting(); // Active le SW immédiatement, sans attendre
 });
 
-// Activation : supprime les anciens caches
+// Activation — prend le contrôle de toutes les pages
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -28,20 +17,19 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Interception réseau : cache-first (sert depuis le cache, sinon réseau)
+// Stratégie réseau d'abord, puis cache (fallback hors ligne)
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request).then((response) => {
-        // On met à jour le cache pour les futures requêtes
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          if (response.ok) cache.put(event.request, clone);
-        });
+    fetch(event.request)
+      .then((response) => {
+        // Mise en cache pour le futur mode hors ligne
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        }
         return response;
-      }).catch(() => caches.match('./index.html')); // fallback offline
-    })
+      })
+      .catch(() => caches.match(event.request).then((cached) => cached || caches.match('./')))
   );
 });
