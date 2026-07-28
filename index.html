@@ -51,6 +51,15 @@
     background: #1A1A1A; color: #fff;
     font-size: 11px; padding: 8px 12px;
   }
+  .dl-btn {
+    margin-left: 8px;
+    padding: 8px 14px; border-radius: 999px; border: 1px solid #F0F0F0;
+    background: #fff; color: #1A1A1A;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    transition: all .2s; white-space: nowrap;
+    text-decoration: none; display: inline-flex; align-items: center; gap: 4px;
+  }
+  .dl-btn:hover { background: #FAFAF8; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
   .install-toast {
     position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
     background: #1A1A1A; color: #fff;
@@ -113,6 +122,7 @@
       <div class="subtitle">Simple · rapide · hors ligne</div>
     </div>
     <button id="installBtn" class="install-btn">📲 Installer</button>
+    <a id="dlBtn" class="dl-btn" href="https://github.com/BrunoRakotomalala62/apk_test_calculatrice_hors_ligne/releases" target="_blank" rel="noopener">⬇️ APK</a>
   </div>
 
   <div class="display">
