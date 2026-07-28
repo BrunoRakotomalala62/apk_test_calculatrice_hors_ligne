@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<meta name="theme-color" content="#B8A9E8" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Calculatrice" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" type="image/svg+xml" href="icon.svg" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<title>Calculatrice</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: #FAFAF8;
+    color: #1A1A1A;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: env(safe-area-inset-top, 16px) 16px env(safe-area-inset-bottom, 16px);
+    -webkit-user-select: none;
+    user-select: none;
+    overflow: hidden;
+  }
+  .app { width: 100%; max-width: 400px; }
+  .header {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+  }
+  .logo {
+    width: 44px; height: 44px; border-radius: 14px; background: #1A1A1A;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: bold; font-size: 20px;
+  }
+  .title { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
+  .subtitle { font-size: 11px; color: #9B9B9B; margin-top: 2px; }
+  .install-btn {
+    margin-left: auto;
+    padding: 8px 14px; border-radius: 999px; border: none;
+    background: #B8A9E8; color: #1A1A1A;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0,0,0,.05);
+    transition: all .2s;
+  }
+  .install-btn:hover { background: #A89AD8; }
+  .install-btn:disabled { display: none; }
+  .display {
+    background: #fff; border: 1px solid #F0F0F0; border-radius: 20px;
+    padding: 22px 20px; margin-bottom: 16px;
+  }
+  .history {
+    height: 18px; text-align: right; font-size: 13px; color: #9B9B9B;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .value {
+    text-align: right; font-size: 48px; font-weight: 700; letter-spacing: -1px;
+    line-height: 1.1; margin-top: 6px;
+    font-variant-numeric: tabular-nums;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .btn {
+    height: 62px; border-radius: 18px; font-size: 22px; font-weight: 600;
+    border: 1px solid #F0F0F0; background: #fff; color: #1A1A1A;
+    cursor: pointer; transition: transform .1s, background .15s, box-shadow .15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .btn:active { transform: scale(0.95); }
+  .btn.num:hover { background: #FAFAF8; }
+  .btn.fn-clear { background: rgba(255,107,107,.1); color: #DC2626; border-color: rgba(255,107,107,.2); }
+  .btn.fn-mod { background: rgba(245,166,35,.1); color: #92400E; border-color: rgba(245,166,35,.2); }
+  .btn.op { background: #B8A9E8; color: #1A1A1A; border-color: transparent; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+  .btn.op.active { background: #A89AD8; }
+  .btn.equals { background: #1A1A1A; color: #fff; border-color: transparent; }
+  .btn.wide { grid-column: span 2; }
+  .footer {
+    margin-top: 18px; font-size: 10px; color: #9B9B9B; text-align: center;
+  }
+  .offline-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 8px; border-radius: 999px;
+    background: rgba(74,222,128,.1); color: #166534;
+    font-size: 10px; font-weight: 600;
+    border: 1px solid rgba(74,222,128,.2);
+  }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: #4ADE80; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="logo">=</div>
+    <div>
+      <div class="title">Calculatrice</div>
+      <div class="subtitle">Simple · rapide · hors ligne</div>
+    </div>
+    <button id="installBtn" class="install-btn" disabled>Installer</button>
+  </div>
+
+  <div class="display">
+    <div id="history" class="history">&nbsp;</div>
+    <div id="value" class="value">0</div>
+  </div>
+
+  <div class="grid">
+    <button class="btn fn-clear" data-action="clear">AC</button>
+    <button class="btn fn-mod" data-action="sign">+/−</button>
+    <button class="btn fn-mod" data-action="percent">%</button>
+    <button class="btn op" data-op="÷">÷</button>
+
+    <button class="btn num" data-digit="7">7</button>
+    <button class="btn num" data-digit="8">8</button>
+    <button class="btn num" data-digit="9">9</button>
+    <button class="btn op" data-op="×">×</button>
+
+    <button class="btn num" data-digit="4">4</button>
+    <button class="btn num" data-digit="5">5</button>
+    <button class="btn num" data-digit="6">6</button>
+    <button class="btn op" data-op="-">−</button>
+
+    <button class="btn num" data-digit="1">1</button>
+    <button class="btn num" data-digit="2">2</button>
+    <button class="btn num" data-digit="3">3</button>
+    <button class="btn op" data-op="+">+</button>
+
+    <button class="btn num wide" data-digit="0">0</button>
+    <button class="btn num" data-action="dot">.</button>
+    <button class="btn equals" data-action="equals">=</button>
+  </div>
+
+  <div class="footer">
+    <span class="offline-badge"><span class="dot"></span> Fonctionne hors ligne</span>
+  </div>
+</div>
+
+<script>
+  // ---- Calculator logic ----
+  let display = '0', previous = null, operator = null, waiting = false, historyText = '';
+  const valueEl = document.getElementById('value');
+  const historyEl = document.getElementById('history');
+
+  function render() {
+    valueEl.textContent = display === 'NaN' ? 'Erreur' : display;
+    historyEl.innerHTML = historyText || '&nbsp;';
+    document.querySelectorAll('.btn.op').forEach(b => {
+      b.classList.toggle('active', waiting && b.dataset.op === operator);
+    });
+  }
+  function inputDigit(d) {
+    if (waiting) { display = String(d); waiting = false; }
+    else display = display === '0' ? String(d) : display + d;
+    render();
+  }
+  function inputDot() {
+    if (waiting) { display = '0.'; waiting = false; }
+    else if (!display.includes('.')) display += '.';
+    render();
+  }
+  function clearAll() { display='0'; previous=null; operator=null; waiting=false; historyText=''; render(); }
+  function sign() { display = String(parseFloat(display) * -1); render(); }
+  function percent() { display = String(parseFloat(display) / 100); render(); }
+  function compute(a, b, op) {
+    switch(op){ case '+': return a+b; case '-': return a-b; case '×': return a*b; case '÷': return b===0?NaN:a/b; }
+    return b;
+  }
+  function performOp(nextOp) {
+    const v = parseFloat(display);
+    if (previous == null) previous = v;
+    else if (operator) {
+      const r = Math.round(compute(previous, v, operator) * 1e10) / 1e10;
+      display = String(r); previous = r;
+    }
+    historyText = (previous ?? v) + ' ' + nextOp;
+    waiting = true; operator = nextOp;
+    render();
+  }
+  function equals() {
+    if (operator == null || previous == null) return;
+    const v = parseFloat(display);
+    const r = Math.round(compute(previous, v, operator) * 1e10) / 1e10;
+    historyText = previous + ' ' + operator + ' ' + v + ' =';
+    display = String(r); previous = null; operator = null; waiting = true;
+    render();
+  }
+  function backspace() {
+    if (waiting) return;
+    display = display.length > 1 ? display.slice(0, -1) : '0';
+    render();
+  }
+
+  document.querySelectorAll('.btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.digit) inputDigit(btn.dataset.digit);
+      else if (btn.dataset.op) performOp(btn.dataset.op);
+      else if (btn.dataset.action === 'clear') clearAll();
+      else if (btn.dataset.action === 'sign') sign();
+      else if (btn.dataset.action === 'percent') percent();
+      else if (btn.dataset.action === 'dot') inputDot();
+      else if (btn.dataset.action === 'equals') equals();
+    });
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (/^[0-9]$/.test(e.key)) inputDigit(e.key);
+    else if (e.key === '.') inputDot();
+    else if (e.key === '+') performOp('+');
+    else if (e.key === '-') performOp('-');
+    else if (e.key === '*') performOp('×');
+    else if (e.key === '/') { e.preventDefault(); performOp('÷'); }
+    else if (e.key === 'Enter' || e.key === '=') { e.preventDefault(); equals(); }
+    else if (e.key === 'Escape') clearAll();
+    else if (e.key === 'Backspace') backspace();
+    else if (e.key === '%') percent();
+  });
+
+  // ---- PWA install prompt ----
+  let deferredPrompt = null;
+  const installBtn = document.getElementById('installBtn');
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.disabled = false;
+  });
+  installBtn.addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') installBtn.style.display = 'none';
+    deferredPrompt = null;
+  });
+  window.addEventListener('appinstalled', () => {
+    installBtn.style.display = 'none';
+  });
+
+  // ---- Service Worker registration (offline) ----
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW failed', err));
+    });
+  }
+</script>
+</body>
+</html>
